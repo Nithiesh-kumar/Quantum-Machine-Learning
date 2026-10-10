@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "model_type": "QuantumSupportVectorClassifier",
+    "framework": "qiskit 2.5.2 | qiskit-machine-learning 0.9.1",
+    "dataset": "heart",
+    "timestamp": "2026-10-10T03:38:34.486093+00:00",
+    "n_qubits": 4,
+    "feature_map": "ZZFeatureMap",
+    "reps": 2,
+    "entanglement": "linear",
+    "kernel_class": "fidelity_quantum",
+    "optimal_C": 5.0,
+    "tuning_summary": {
+      "best_C": 5.0,
+      "optimization_metric": "recall",
+      "candidates_evaluated": [
+        {
+          "C": 0.05,
+          "val_recall": 0.0,
+          "val_f1": 0.0,
+          "val_acc": 0.5333333333333333,
+          "val_roc_auc": 0.746031746031746
+        },
+        {
+          "C": 0.1,
+          "val_recall": 0.0,
+          "val_f1": 0.0,
+          "val_acc": 0.5333333333333333,
+          "val_roc_auc": 0.746031746031746
+        },
+        {
+          "C": 0.5,
+          "val_recall": 0.42857142857142855,
+          "val_f1": 0.5294117647058824,
+          "val_acc": 0.6444444444444445,
+          "val_roc_auc": 0.7757936507936508
+        },
+        {
+          "C": 1.0,
+          "val_recall": 0.47619047619047616,
+          "val_f1": 0.5555555555555556,
+          "val_acc": 0.6444444444444445,
+          "val_roc_auc": 0.7876984126984127
+        },
+        {
+          "C": 5.0,
+          "val_recall": 0.5238095238095238,
+          "val_f1": 0.5641025641025641,
+          "val_acc": 0.6222222222222222,
+          "val_roc_auc": 0.6984126984126985
+        },
+        {
+          "C": 10.0,
+          "val_recall": 0.5238095238095238,
+          "val_f1": 0.55,
+          "val_acc": 0.6,
+          "val_roc_auc": 0.6845238095238095
+        }
+      ]
+    },
+    "cache_metadata": {
+      "cache_status": "hit",
+      "cache_path": "D:\\Quantum ML\\qml-health-risk\\data\\processed\\kernel_cache_heart_4q_r2_linear_fidelity_quantum.npz",
+      "computation_time_seconds": 0.0,
+      "K_train_shape": [
+        212,
+        212
+      ]
+    },
+    "pipeline_time_seconds": 2.13,
+    "train_samples": 212,
+    "val_samples": 45,
+    "test_samples": 46
+  },
+  "qiskit_api_changes": {
+    "qiskit_version": "2.5.2",
+    "qiskit_machine_learning_version": "0.9.1",
+    "zz_feature_map_migration": "In Qiskit 2.1+, the class 'qiskit.circuit.library.ZZFeatureMap' was deprecated in favor of the functional constructor 'qiskit.circuit.library.zz_feature_map'. The function returns a standard QuantumCircuit rather than a BlueprintCircuit, avoiding legacy decomposition overhead.",
+    "fidelity_quantum_kernel_architecture": "In qiskit-machine-learning >= 0.7.0, the legacy backend-based 'QuantumKernel' class was removed. It was replaced by 'FidelityQuantumKernel' and 'FidelityStatevectorKernel', which rely on Qiskit's primitives architecture (BaseStateFidelity / ComputeUncompute) for shot-based or statevector fidelity evaluation.",
+    "qiskit_primitives_v2": "Qiskit 2.x standardized on SamplerV2 and EstimatorV2 primitives, with ComputeUncompute managing quantum state overlap circuits |<psi(x)|psi(y)>|^2 without requiring qiskit-aer or legacy Aer backends."
+  },
+  "validation_metrics": {
+    "accuracy": 0.6222,
+    "precision": 0.6111,
+    "recall": 0.5238,
+    "specificity": 0.7083,
+    "f1": 0.5641,
+    "roc_auc": 0.6984,
+    "confusion_matrix": [
+      [
+        17,
+        7
+      ],
+      [
+        10,
+        11
+      ]
+    ],
+    "true_negatives": 17,
+    "false_positives": 7,
+    "false_negatives": 10,
+    "true_positives": 11
+  },
+  "test_metrics": {
+    "accuracy": 0.6087,
+    "precision": 0.5789,
+    "recall": 0.5238,
+    "specificity": 0.68,
+    "f1": 0.55,
+    "roc_auc": 0.6514,
+    "confusion_matrix": [
+      [
+        17,
+        8
+      ],
+      [
+        10,
+        11
+      ]
+    ],
+    "true_negatives": 17,
+    "false_positives": 8,
+    "false_negatives": 10,
+    "true_positives": 11
+  },
+  "saved_artifacts": {
+    "metrics_json": "D:\\Quantum ML\\qml-health-risk\\results\\qsvc_metrics.json",
+    "kernel_heatmap": "D:\\Quantum ML\\qml-health-risk\\results\\qsvc_kernel_heatmap.png",
+    "model_bundle": "D:\\Quantum ML\\qml-health-risk\\models\\qsvc_model.joblib",
+    "kernel_cache": "D:\\Quantum ML\\qml-health-risk\\data\\processed\\kernel_cache_heart_4q_r2_linear_fidelity_quantum.npz"
+  }
+}

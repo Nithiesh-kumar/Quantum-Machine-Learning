@@ -1,0 +1,33 @@
+{
+  "dataset": "UCI Cleveland Heart Disease",
+  "sample_count": 303,
+  "feature_count": 13,
+  "class_balance": {
+    "low_risk_0": 164,
+    "high_risk_1": 139,
+    "high_risk_ratio": 0.45874587458745875
+  },
+  "missing_values": {
+    "age": 0,
+    "sex": 0,
+    "cp": 0,
+    "trestbps": 0,
+    "chol": 0,
+    "fbs": 0,
+    "restecg": 0,
+    "thalach": 0,
+    "exang": 0,
+    "oldpeak": 0,
+    "slope": 0,
+    "ca": 4,
+    "thal": 2,
+    "num": 0
+  },
+  "key_clinical_insights": [
+    "Moderate class balance (54.1% low risk vs 45.9% high risk) enables reliable training without extreme rebalancing.",
+    "Maximum heart rate achieved (thalach) demonstrates significant negative correlation with disease risk; lower max HR correlates with higher risk.",
+    "ST depression induced by exercise (oldpeak) and chest pain type (cp) show strong positive predictive power for coronary artery disease.",
+    "Minor missingness in fluoroscopy vessels ('ca': 4 missing) and thallium scan ('thal': 2 missing) handled cleanly via median/mode imputation.",
+    "Serum cholesterol and resting blood pressure exhibit high variance and positive skew, necessitating standard scaling prior to quantum feature mapping."
+  ]
+}

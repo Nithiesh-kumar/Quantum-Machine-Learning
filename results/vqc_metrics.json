@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "model_type": "VariationalQuantumClassifier",
+    "framework": "PennyLane 0.45.1",
+    "dataset": "heart",
+    "timestamp": "2026-10-10T03:10:14.944930+00:00",
+    "n_qubits": 6,
+    "n_layers": 2,
+    "feature_map": "angle",
+    "ansatz": "strongly_entangling",
+    "measurement": "PauliZ_q0",
+    "loss_function": "binary_cross_entropy",
+    "optimizer": "adam",
+    "learning_rate": 0.02,
+    "batch_size": 16,
+    "epochs_configured": 40,
+    "best_epoch": 38,
+    "early_stopping_patience": 8,
+    "diff_method": "backprop",
+    "interface": "torch",
+    "noise_model": false,
+    "noise_probability": 0.0,
+    "train_time_seconds": 11.49,
+    "train_samples": 212,
+    "val_samples": 45,
+    "test_samples": 46
+  },
+  "validation_metrics": {
+    "accuracy": 0.8444,
+    "precision": 0.9375,
+    "recall": 0.7143,
+    "specificity": 0.9583,
+    "f1": 0.8108,
+    "roc_auc": 0.9643,
+    "confusion_matrix": [
+      [
+        23,
+        1
+      ],
+      [
+        6,
+        15
+      ]
+    ],
+    "true_negatives": 23,
+    "false_positives": 1,
+    "false_negatives": 6,
+    "true_positives": 15
+  },
+  "test_metrics": {
+    "accuracy": 0.8043,
+    "precision": 0.875,
+    "recall": 0.6667,
+    "specificity": 0.92,
+    "f1": 0.7568,
+    "roc_auc": 0.9276,
+    "confusion_matrix": [
+      [
+        23,
+        2
+      ],
+      [
+        7,
+        14
+      ]
+    ],
+    "true_negatives": 23,
+    "false_positives": 2,
+    "false_negatives": 7,
+    "true_positives": 14
+  },
+  "saved_artifacts": {
+    "model_checkpoint": "D:\\Quantum ML\\qml-health-risk\\models\\vqc.pt",
+    "training_curves": "D:\\Quantum ML\\qml-health-risk\\results\\vqc_curves.png",
+    "circuit_diagram": "D:\\Quantum ML\\qml-health-risk\\results\\vqc_circuit.png",
+    "metrics_json": "D:\\Quantum ML\\qml-health-risk\\results\\vqc_metrics.json"
+  }
+}
