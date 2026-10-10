@@ -9,6 +9,7 @@ import {
   Layers,
   Sparkles,
 } from 'lucide-react';
+import { getApiUrl } from '../config';
 
 export default function ModelInsights() {
   const [metrics, setMetrics] = useState(null);
@@ -21,8 +22,8 @@ export default function ModelInsights() {
       try {
         setLoading(true);
         const [metricsRes, infoRes] = await Promise.all([
-          fetch('/metrics'),
-          fetch('/model-info'),
+          fetch(getApiUrl('/metrics')),
+          fetch(getApiUrl('/model-info')),
         ]);
 
         if (!metricsRes.ok || !infoRes.ok) {
@@ -234,7 +235,7 @@ export default function ModelInsights() {
           </p>
           <div style={{ background: '#ffffff', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center' }}>
             <img
-              src="/static/vqc_circuit.png"
+              src={getApiUrl('/static/vqc_circuit.png')}
               alt="4-Qubit VQC Quantum Circuit Architecture Diagram"
               style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-sm)' }}
               loading="lazy"
@@ -253,7 +254,7 @@ export default function ModelInsights() {
           </p>
           <div style={{ background: '#ffffff', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center' }}>
             <img
-              src="/static/figures/roc_curves_overlay.png"
+              src={getApiUrl('/static/figures/roc_curves_overlay.png')}
               alt="Multi-Model ROC Curves Overlay"
               style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-sm)' }}
               loading="lazy"
@@ -272,7 +273,7 @@ export default function ModelInsights() {
           </p>
           <div style={{ background: '#ffffff', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center' }}>
             <img
-              src="/static/figures/calibration_curves.png"
+              src={getApiUrl('/static/figures/calibration_curves.png')}
               alt="Probability Calibration Curves and Reliability Diagram"
               style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-sm)' }}
               loading="lazy"

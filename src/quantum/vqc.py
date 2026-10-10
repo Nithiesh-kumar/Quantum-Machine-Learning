@@ -33,9 +33,16 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except (ImportError, ModuleNotFoundError):
+    matplotlib = None
+    plt = None
+    HAS_MATPLOTLIB = False
+
 import numpy as original_np
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -688,15 +695,31 @@ class VariationalQuantumClassifier(BaseEstimator, ClassifierMixin):
     def load_model(cls, model_path: Union[str, Path]) -> "VariationalQuantumClassifier":
         """Loads a saved VQC model checkpoint from disk."""
         target_path = Path(model_path)
+        # Check for alternative extensions if file does not exist directly
+        if not target_path.exists():
+            for alt_ext in [".joblib", ".pt", ".pkl"]:
+                candidate = target_path.with_suffix(alt_ext)
+                if candidate.exists():
+                    target_path = candidate
+                    break
         if not target_path.exists():
             raise FileNotFoundError(f"Model checkpoint not found at: {target_path}")
 
         loaded_data = None
-        if HAS_TORCH:
+        # 1. If joblib format or joblib checkpoint exists alongside .pt
+        joblib_path = target_path if target_path.suffix == ".joblib" else target_path.with_suffix(".joblib")
+        if joblib_path.exists():
+            try:
+                import joblib
+                loaded_data = joblib.load(joblib_path)
+            except Exception as e:
+                logger.warning("joblib.load on %s failed: %s", joblib_path, e)
+
+        # 2. PyTorch checkpoint loading if torch is available
+        if loaded_data is None and HAS_TORCH:
             try:
                 loaded_data = torch.load(target_path, map_location="cpu", weights_only=False)
             except TypeError:
-                # Older torch versions without weights_only keyword argument
                 try:
                     loaded_data = torch.load(target_path, map_location="cpu")
                 except Exception as e:
@@ -704,6 +727,7 @@ class VariationalQuantumClassifier(BaseEstimator, ClassifierMixin):
             except Exception as e:
                 logger.warning("torch.load failed (%s). Attempting pickle fallback.", e)
 
+        # 3. Standard pickle fallback
         if loaded_data is None:
             with open(target_path, "rb") as f:
                 loaded_data = pickle.load(f)

@@ -297,10 +297,10 @@ class ModelInfoResponse(BaseModel):
 # Health Response Schema
 # ---------------------------------------------------------------------------
 class HealthResponse(BaseModel):
-    status: Literal["healthy", "degraded", "unhealthy"]
-    timestamp: str
-    version: str
-    models_loaded: bool
-    loaded_models_count: int
-    active_dataset: str
-    production_model: str
+    status: str = Field(default="ok", description="Operating health status ('ok', 'healthy')")
+    models_loaded: bool = Field(..., description="Whether production ML models are resident in memory")
+    timestamp: Optional[str] = None
+    version: Optional[str] = "1.0.0"
+    loaded_models_count: Optional[int] = None
+    active_dataset: Optional[str] = None
+    production_model: Optional[str] = None

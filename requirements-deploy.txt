@@ -1,0 +1,25 @@
+# ==============================================================================
+# CardioQuantum Slim Deployment Dependencies (Render / Linux x86_64 / Python 3.13)
+# Tuned for Render Free Tier (512 MB RAM ceiling)
+# Excludes: PyTorch, Qiskit, Qiskit-Machine-Learning, Matplotlib, Jupyter, Seaborn
+# ==============================================================================
+
+# Core Web Framework & ASGI Server
+fastapi==0.143.0
+uvicorn==0.54.0
+pydantic==2.14.0
+
+# Scientific & Tabular Data Processing
+numpy==2.5.3
+pandas==3.0.6
+
+# Machine Learning & Model Deserialization (MUST MATCH TRAINING VERSION)
+scikit-learn==1.9.1
+joblib==1.6.0
+
+# Quantum Inference (PennyLane Simulator)
+pennylane==0.45.1
+pennylane-lightning==0.45.0
+
+# Environment Configuration
+python-dotenv==1.2.4

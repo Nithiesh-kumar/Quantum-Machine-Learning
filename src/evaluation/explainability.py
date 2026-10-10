@@ -3,7 +3,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import joblib
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except (ImportError, ModuleNotFoundError):
+    matplotlib = None
+    plt = None
+    HAS_MATPLOTLIB = False
+
 import numpy as np
 from sklearn.calibration import calibration_curve
 from sklearn.inspection import permutation_importance
@@ -210,9 +219,10 @@ def compute_calibration_and_brier_scores(
     """
     calibration_results: Dict[str, Any] = {}
 
-    fig, ax = plt.subplots(figsize=(8.5, 6.5), dpi=300)
-    # Perfect calibration reference line (y = x)
-    ax.plot([0, 1], [0, 1], "k--", label="Perfectly Calibrated (Ideal)", alpha=0.7)
+    fig, ax = (plt.subplots(figsize=(8.5, 6.5), dpi=300)) if HAS_MATPLOTLIB else (None, None)
+    if HAS_MATPLOTLIB and ax is not None:
+        # Perfect calibration reference line (y = x)
+        ax.plot([0, 1], [0, 1], "k--", label="Perfectly Calibrated (Ideal)", alpha=0.7)
 
     colors = {
         "MLP": "#9467bd",
@@ -241,24 +251,26 @@ def compute_calibration_and_brier_scores(
                 "mean_predicted_values": [round(float(v), 4) for v in mpv],
             }
 
-            color = colors.get(name, "#333333")
-            ax.plot(mpv, fop, "s-", label=f"{name} (Brier: {brier:.3f})", color=color, linewidth=2, markersize=5)
+            if HAS_MATPLOTLIB and ax is not None:
+                color = colors.get(name, "#333333")
+                ax.plot(mpv, fop, "s-", label=f"{name} (Brier: {brier:.3f})", color=color, linewidth=2, markersize=5)
         except Exception as e:
             logger.warning("Calibration calculation for %s failed: %s", name, e)
 
-    ax.set_xlabel("Mean Predicted Probability", fontsize=11)
-    ax.set_ylabel("Observed Fraction of Positives (True Risk)", fontsize=11)
-    ax.set_title("Probability Calibration Curves & Brier Scores\n(UCI Cleveland Test Set)", fontsize=13, fontweight="bold", pad=12)
-    ax.set_ylim([-0.05, 1.05])
-    ax.set_xlim([-0.05, 1.05])
-    ax.grid(True, linestyle="--", alpha=0.5)
-    ax.legend(loc="lower right", frameon=True)
+    if HAS_MATPLOTLIB and ax is not None and fig is not None:
+        ax.set_xlabel("Mean Predicted Probability", fontsize=11)
+        ax.set_ylabel("Observed Fraction of Positives (True Risk)", fontsize=11)
+        ax.set_title("Probability Calibration Curves & Brier Scores\n(UCI Cleveland Test Set)", fontsize=13, fontweight="bold", pad=12)
+        ax.set_ylim([-0.05, 1.05])
+        ax.set_xlim([-0.05, 1.05])
+        ax.grid(True, linestyle="--", alpha=0.5)
+        ax.legend(loc="lower right", frameon=True)
 
-    plt.tight_layout()
-    fig_path = save_figure_path or (RESULTS_DIR / "figures" / "calibration_curves.png")
-    fig_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(fig_path, dpi=300)
-    plt.close()
-    logger.info("Saved calibration curves figure to: %s", fig_path)
+        plt.tight_layout()
+        fig_path = save_figure_path or (RESULTS_DIR / "figures" / "calibration_curves.png")
+        fig_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(fig_path, dpi=300)
+        plt.close(fig)
+        logger.info("Saved calibration curves figure to: %s", fig_path)
 
     return calibration_results

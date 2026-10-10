@@ -1,0 +1,17 @@
+# Render Blueprint Specification for CardioQuantum Backend Service
+services:
+  - type: web
+    name: cardioquantum-api
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements-deploy.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: ALLOWED_ORIGINS
+        value: "http://localhost:5173,http://127.0.0.1:5173,https://*.vercel.app"

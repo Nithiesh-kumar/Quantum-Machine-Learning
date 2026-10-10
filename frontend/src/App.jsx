@@ -5,7 +5,8 @@ import SamplePresets, { PATIENT_PRESETS } from './components/SamplePresets';
 import Wizard from './components/Wizard';
 import ResultScreen from './components/ResultScreen';
 import ModelInsights from './components/ModelInsights';
-import { AlertCircle, RefreshCw, ShieldAlert } from 'lucide-react';
+import { AlertCircle, RefreshCw, RotateCw, ShieldAlert, Sparkles, Activity } from 'lucide-react';
+import { getApiUrl, API_BASE_URL } from './config';
 
 const DEFAULT_PATIENT = {
   age: 58.0,
@@ -45,6 +46,8 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiOnline, setApiOnline] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [wakingUpElapsed, setWakingUpElapsed] = useState(0);
   const [apiError, setApiError] = useState(null);
 
   // Apply theme to document
@@ -57,23 +60,64 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Check API health on mount
+  // Check API health
   const checkHealth = async () => {
     try {
-      const res = await fetch('/health');
+      const res = await fetch(getApiUrl('/health'));
       if (res.ok) {
         setApiOnline(true);
+        setIsWakingUp(false);
+        setWakingUpElapsed(0);
         setApiError(null);
-      } else {
-        setApiOnline(false);
+        return true;
       }
+      return false;
     } catch {
-      setApiOnline(false);
+      return false;
     }
   };
 
+  // Mount health check with 60s waking-up loop for sleeping Render instances
   useEffect(() => {
-    checkHealth();
+    let intervalId = null;
+    let timerId = null;
+    let elapsed = 0;
+
+    async function probeServer() {
+      const online = await checkHealth();
+      if (!online) {
+        setIsWakingUp(true);
+        setApiOnline(false);
+
+        timerId = setInterval(() => {
+          elapsed += 1;
+          setWakingUpElapsed(elapsed);
+          if (elapsed >= 60) {
+            clearInterval(timerId);
+            clearInterval(intervalId);
+            setIsWakingUp(false);
+            setApiOnline(false);
+          }
+        }, 1000);
+
+        intervalId = setInterval(async () => {
+          const ok = await checkHealth();
+          if (ok) {
+            clearInterval(timerId);
+            clearInterval(intervalId);
+            setIsWakingUp(false);
+            setApiOnline(true);
+          }
+        }, 3000);
+      }
+    }
+
+    probeServer();
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   // Autosave patient data
@@ -111,7 +155,7 @@ export default function App() {
     };
 
     try {
-      const res = await fetch('/predict', {
+      const res = await fetch(getApiUrl('/predict'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,20 +213,87 @@ export default function App() {
         apiOnline={apiOnline}
       />
 
+      {/* Render Sleeping Instance: Waking Up Server Loading State (up to 60s) */}
+      {isWakingUp && (
+        <div
+          className="wizard-card"
+          role="status"
+          style={{
+            marginBottom: '1.25rem',
+            padding: '1.25rem 1.5rem',
+            border: '1.5px solid var(--primary-300)',
+            background: 'linear-gradient(135deg, var(--primary-50) 0%, var(--bg-card) 100%)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'var(--primary-100)',
+                  color: 'var(--primary-700)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <RotateCw size={20} className="spinning" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>Waking up the server…</span>
+                  <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '9999px', background: 'var(--primary-200)', color: 'var(--primary-900)' }}>
+                    Render Free Tier ({wakingUpElapsed}s / 60s)
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>
+                  Render instances sleep after inactivity. Polling <code>{getApiUrl('/health')}</code> automatically until the container is ready…
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => checkHealth()}
+              style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+            >
+              <RefreshCw size={14} />
+              <span>Check Now</span>
+            </button>
+          </div>
+          <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '9999px', marginTop: '0.85rem', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.max(8, (wakingUpElapsed / 60) * 100))}%`,
+                background: 'linear-gradient(90deg, var(--primary-500), var(--primary-700))',
+                transition: 'width 1s linear',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* API-Down Fallback Notification Banner */}
-      {!apiOnline && (
+      {!apiOnline && !isWakingUp && (
         <div className="error-banner" role="alert">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <AlertCircle size={20} />
             <div>
               <strong>FastAPI Service Disconnected:</strong> Cannot reach backend server at{' '}
-              <code>http://127.0.0.1:8000</code>. Please check that Uvicorn is active.
+              <code>{API_BASE_URL || 'http://127.0.0.1:8000'}</code>. Please verify the API server is active.
             </div>
           </div>
           <button
             type="button"
             className="btn-secondary"
-            onClick={checkHealth}
+            onClick={() => {
+              setIsWakingUp(true);
+              setWakingUpElapsed(0);
+              checkHealth();
+            }}
             style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', border: 'none' }}
           >
             <RefreshCw size={14} />

@@ -1,0 +1,165 @@
+{
+  "clinical_importances": {
+    "age": 0.1103,
+    "trestbps": 0.0684,
+    "chol": 0.0516,
+    "thalach": 0.1156,
+    "oldpeak": 0.1203,
+    "ca": 0.1058,
+    "sex": 0.0297,
+    "cp": 0.0843,
+    "fbs": 0.0119,
+    "restecg": 0.042,
+    "exang": 0.0748,
+    "slope": 0.0933,
+    "thal": 0.0921
+  },
+  "ranked_features": [
+    [
+      "oldpeak",
+      0.1203
+    ],
+    [
+      "thalach",
+      0.1156
+    ],
+    [
+      "age",
+      0.1103
+    ],
+    [
+      "ca",
+      0.1058
+    ],
+    [
+      "slope",
+      0.0933
+    ],
+    [
+      "thal",
+      0.0921
+    ],
+    [
+      "cp",
+      0.0843
+    ],
+    [
+      "exang",
+      0.0748
+    ],
+    [
+      "trestbps",
+      0.0684
+    ],
+    [
+      "chol",
+      0.0516
+    ],
+    [
+      "restecg",
+      0.042
+    ],
+    [
+      "sex",
+      0.0297
+    ],
+    [
+      "fbs",
+      0.0119
+    ]
+  ],
+  "brier_scores": {
+    "Logistic Regression": 0.1328,
+    "SVM-RBF": 0.1536,
+    "Random Forest": 0.1289,
+    "MLP": 0.1248,
+    "production": 0.1346
+  },
+  "calibration_results": {
+    "Logistic Regression": {
+      "brier_score": 0.1328,
+      "fraction_of_positives": [
+        0.0769,
+        0.0,
+        0.3333,
+        0.5833,
+        0.9231
+      ],
+      "mean_predicted_values": [
+        0.1287,
+        0.3122,
+        0.5005,
+        0.6985,
+        0.8949
+      ]
+    },
+    "SVM-RBF": {
+      "brier_score": 0.1536,
+      "fraction_of_positives": [
+        0.0909,
+        0.0,
+        0.75,
+        0.5,
+        0.9091
+      ],
+      "mean_predicted_values": [
+        0.1418,
+        0.2662,
+        0.5126,
+        0.7171,
+        0.8603
+      ]
+    },
+    "Random Forest": {
+      "brier_score": 0.1289,
+      "fraction_of_positives": [
+        0.1,
+        0.0,
+        0.25,
+        0.7,
+        0.9231
+      ],
+      "mean_predicted_values": [
+        0.1022,
+        0.2704,
+        0.5304,
+        0.7412,
+        0.892
+      ]
+    },
+    "MLP": {
+      "brier_score": 0.1248,
+      "fraction_of_positives": [
+        0.0769,
+        0.0,
+        0.6667,
+        0.6154,
+        1.0
+      ],
+      "mean_predicted_values": [
+        0.1041,
+        0.3156,
+        0.5506,
+        0.7055,
+        0.8848
+      ]
+    },
+    "production": {
+      "brier_score": 0.1346,
+      "fraction_of_positives": [
+        0.1111,
+        0.0,
+        0.25,
+        0.6,
+        0.9286
+      ],
+      "mean_predicted_values": [
+        0.1638,
+        0.3028,
+        0.5292,
+        0.7244,
+        0.8783
+      ]
+    }
+  }
+}

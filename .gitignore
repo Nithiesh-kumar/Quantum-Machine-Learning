@@ -38,9 +38,16 @@ frontend/dist/
 *.swp
 *.swo
 
+# Raw datasets (do not commit raw data)
+data/raw/*.csv
+!data/raw/.gitkeep
+
 # Project logs
 logs/*.log
 !logs/.gitkeep
+
+# Temporary / clean deployment test venvs
+.venv_deploy/
 
 # OS
 .DS_Store

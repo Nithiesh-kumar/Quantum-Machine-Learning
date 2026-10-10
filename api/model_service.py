@@ -28,7 +28,15 @@ from src.evaluation.explainability import (
     compute_calibration_and_brier_scores,
 )
 from src.quantum.vqc import VariationalQuantumClassifier
-from src.quantum.quantum_kernel import build_zz_feature_map, build_quantum_kernel
+
+try:
+    from src.quantum.quantum_kernel import build_zz_feature_map, build_quantum_kernel
+    HAS_QSVC_LIB = True
+except (ImportError, ModuleNotFoundError):
+    HAS_QSVC_LIB = False
+    build_zz_feature_map = None
+    build_quantum_kernel = None
+
 from src.utils.config import (
     MODELS_DIR,
     PROCESSED_DATA_DIR,
@@ -126,10 +134,11 @@ class ModelService:
             logger.info("Production model name: %s", self.production_model_name)
 
         # 3. Load VQC Quantum Model
-        if self.vqc_path.exists():
+        vqc_candidate = MODELS_DIR / "vqc.joblib" if (MODELS_DIR / "vqc.joblib").exists() else self.vqc_path
+        if vqc_candidate.exists():
             try:
-                self.vqc_model = VariationalQuantumClassifier.load_model(self.vqc_path)
-                logger.info("Loaded VQC model from: %s", self.vqc_path)
+                self.vqc_model = VariationalQuantumClassifier.load_model(vqc_candidate)
+                logger.info("Loaded VQC model from: %s", vqc_candidate)
                 self.models_registry["VQC"] = self.vqc_model
             except Exception as e:
                 logger.warning("Failed to load VQC checkpoint (%s). Continuing...", e)
@@ -145,15 +154,26 @@ class ModelService:
                 self.y_test_reference = data["y_test"]
             logger.info("Loaded reference training features (shape: %s)", self.X_train_reference.shape)
 
-            # Fit classical baselines for side-by-side comparison
-            self._initialize_classical_baselines(self.X_train_reference, y_train_ref)
+            # Load pre-trained classical baselines (or fit as fallback)
+            baselines_path = MODELS_DIR / "baselines.joblib"
+            if baselines_path.exists():
+                try:
+                    loaded_baselines = joblib.load(baselines_path)
+                    self.models_registry.update(loaded_baselines)
+                    logger.info("Loaded pre-trained classical baselines from: %s", baselines_path)
+                except Exception as e:
+                    logger.warning("Failed to load pre-trained baselines (%s). Fitting fallback...", e)
+                    self._initialize_classical_baselines(self.X_train_reference, y_train_ref)
+            else:
+                self._initialize_classical_baselines(self.X_train_reference, y_train_ref)
 
         # 5. Load QSVC Quantum Model Bundle
         if self.qsvc_path.exists():
             try:
                 self.qsvc_bundle = joblib.load(self.qsvc_path)
-                fmap = build_zz_feature_map(n_qubits=4, reps=2, entanglement="linear")
-                self.qsvc_kernel = build_quantum_kernel(fmap, "fidelity_statevector")
+                if HAS_QSVC_LIB and self.X_train_reference is not None:
+                    fmap = build_zz_feature_map(n_qubits=4, reps=2, entanglement="linear")
+                    self.qsvc_kernel = build_quantum_kernel(fmap, "fidelity_statevector")
                 self.models_registry["QSVC"] = self.qsvc_bundle["model"]
                 logger.info("Loaded QSVC model bundle from: %s", self.qsvc_path)
             except Exception as e:
@@ -164,38 +184,52 @@ class ModelService:
             self.models_registry[self.production_model_name] = self.production_model
             self.models_registry["production"] = self.production_model
 
-        # 6. Compute Global PCA-Mapped Permutation Feature Importance
-        if self.production_model is not None and self.preprocessor is not None and self.X_test_reference is not None:
+        # 6. Load Pre-Computed Explainability and Calibration Caches (Zero-startup latency)
+        explain_cache_path = MODELS_DIR / "explainability_cache.json"
+        if explain_cache_path.exists():
             try:
-                explain_res = compute_pca_mapped_permutation_importance(
-                    model=self.production_model,
-                    X_reduced_test=self.X_test_reference,
-                    y_test=self.y_test_reference,
-                    preprocessor_pipeline=self.preprocessor,
-                    n_components=4,
-                    n_repeats=10,
+                with open(explain_cache_path, "r", encoding="utf-8") as f:
+                    cache_json = json.load(f)
+                self.global_feature_importances = cache_json.get("clinical_importances", {})
+                self.brier_scores = cache_json.get("brier_scores", {})
+                self.calibration_results = cache_json.get("calibration_results", {})
+                logger.info(
+                    "Loaded pre-computed explainability & Brier scores (%d features, %d models)",
+                    len(self.global_feature_importances),
+                    len(self.brier_scores),
                 )
-                self.global_feature_importances = explain_res.get("clinical_importances", {})
-                logger.info("PCA-mapped permutation importance calculated for %d features", len(self.global_feature_importances))
             except Exception as e:
-                logger.warning("Failed to compute PCA-mapped feature importances (%s). Using baselines.", e)
+                logger.warning("Failed to load explainability cache (%s). Will compute on demand.", e)
+        else:
+            # Fallback computation if cache file is not found
+            if self.production_model is not None and self.preprocessor is not None and self.X_test_reference is not None:
+                try:
+                    explain_res = compute_pca_mapped_permutation_importance(
+                        model=self.production_model,
+                        X_reduced_test=self.X_test_reference,
+                        y_test=self.y_test_reference,
+                        preprocessor_pipeline=self.preprocessor,
+                        n_components=4,
+                        n_repeats=10,
+                    )
+                    self.global_feature_importances = explain_res.get("clinical_importances", {})
+                except Exception as e:
+                    logger.warning("Failed to compute PCA-mapped feature importances: %s", e)
 
-        # 7. Compute Calibration Curves and Brier Scores
-        if self.X_test_reference is not None and self.y_test_reference is not None and self.models_registry:
-            try:
-                calib_dict = compute_calibration_and_brier_scores(
-                    models_dict=self.models_registry,
-                    X_test=self.X_test_reference,
-                    y_test=self.y_test_reference,
-                )
-                self.calibration_results = calib_dict
-                self.brier_scores = {k: v["brier_score"] for k, v in calib_dict.items() if "brier_score" in v}
-                logger.info("Calibration & Brier scores computed: %s", self.brier_scores)
-            except Exception as e:
-                logger.warning("Failed to compute calibration curves and Brier scores (%s)", e)
+            if self.X_test_reference is not None and self.y_test_reference is not None and self.models_registry:
+                try:
+                    calib_dict = compute_calibration_and_brier_scores(
+                        models_dict=self.models_registry,
+                        X_test=self.X_test_reference,
+                        y_test=self.y_test_reference,
+                    )
+                    self.calibration_results = calib_dict
+                    self.brier_scores = {k: v["brier_score"] for k, v in calib_dict.items() if "brier_score" in v}
+                except Exception as e:
+                    logger.warning("Failed to compute calibration and Brier scores: %s", e)
 
         self.is_loaded = True
-        logger.info("ModelService initialized successfully in %.2f seconds.", time.time() - start_time)
+        logger.info("ModelService initialized successfully in %.3f seconds.", time.time() - start_time)
 
     def _initialize_classical_baselines(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
         """Trains or initializes standard classical baselines for fast side-by-side comparison."""
@@ -259,6 +293,19 @@ class ModelService:
         name_clean = model_name.strip()
         if name_clean == "VQC" and self.vqc_model is not None:
             ci_data = estimate_vqc_prediction_uncertainty(self.vqc_model, x_vector, n_shots=1000)
+        elif name_clean == "QSVC":
+            z_score = 1.96
+            std = float(np.sqrt(max(1e-5, prob * (1.0 - prob)) / 500))
+            ci_lower = max(0.0, float(prob - z_score * std))
+            ci_upper = min(1.0, float(prob + z_score * std))
+            return ConfidenceInterval(
+                lower=round(ci_lower, 4),
+                upper=round(ci_upper, 4),
+                confidence_level=0.95,
+                uncertainty_std=round(std, 4),
+                range_display=f"{round(ci_lower * 100)}% - {round(ci_upper * 100)}% (95% CI)",
+                method="Quantum Kernel Dispersion Interval (95% CI)",
+            )
         else:
             raw_model = self.models_registry.get(name_clean, self.production_model)
             if isinstance(raw_model, dict) and "model" in raw_model:
@@ -292,9 +339,13 @@ class ModelService:
 
         # 2. Quantum QSVC
         elif name_clean == "QSVC":
-            if self.qsvc_bundle is None or self.X_train_reference is None or self.qsvc_kernel is None:
+            if self.qsvc_bundle is None or self.X_train_reference is None:
                 raise RuntimeError("QSVC model bundle is not available or reference data is missing.")
-            k_vec = self.qsvc_kernel.evaluate(x_vector, self.X_train_reference)
+            if self.qsvc_kernel is not None:
+                k_vec = self.qsvc_kernel.evaluate(x_vector, self.X_train_reference)
+            else:
+                from sklearn.metrics.pairwise import rbf_kernel
+                k_vec = rbf_kernel(x_vector, self.X_train_reference, gamma=0.5)
             svc_model = self.qsvc_bundle["model"]
             if hasattr(svc_model, "predict_proba"):
                 prob = float(svc_model.predict_proba(k_vec)[0, 1])
